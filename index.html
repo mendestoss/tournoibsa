@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BSA Tournoi Pro - Direct Stade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .bg-champions-stadium {
+      background: radial-gradient(circle at 50% 0%, rgba(30, 58, 138, 0.6) 0%, rgba(15, 23, 42, 0.98) 75%),
+                  url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .gold-glow {
+      text-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-champions-stadium text-slate-100 selection:bg-amber-500 selection:text-blue-950">
+
+  <!-- EN-TÊTE PRINCIPAL MOBILE & DESKTOP -->
+  <header class="bg-blue-950/95 backdrop-blur-xl border-b border-amber-500/30 sticky top-0 z-40 shadow-2xl">
+    <div class="max-w-4xl mx-auto px-3 py-3 flex justify-between items-center">
+      
+      <!-- LOGO TOURNOI & NOM (TRANSPARENT) -->
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <div id="tournamentLogoContainer" class="w-11 h-11 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <span class="text-2xl">🏆</span>
+        </div>
+
+        <div class="min-w-0">
+          <h1 id="headerTournoiName" class="font-black text-sm md:text-lg text-white tracking-tight truncate gold-glow">Beaumont SA - Tournoi 2026</h1>
+          <p class="text-[10px] text-amber-400 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Direct Stade • Live
+          </p>
+        </div>
+      </div>
+
+      <!-- BOUTONS ORGANISATEUR -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button id="adminToggleBtn" onclick="openAdminModal()" class="bg-amber-500/20 border border-amber-500/50 text-amber-300 px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-shield-halved text-amber-400"></i> Admin
+        </button>
+        <button id="adminLogoutBtn" onclick="logoutAdmin()" class="hidden bg-rose-600/30 text-rose-300 border border-rose-500/40 px-2.5 py-2 rounded-xl text-xs font-black transition">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- SÉLECTEUR DE CATÉGORIES TACTILE -->
+    <div class="bg-blue-950/95 border-t border-blue-900/60 px-2">
+      <div class="max-w-4xl mx-auto flex gap-1.5 overflow-x-auto no-scrollbar py-2" id="categoryTabs"></div>
+    </div>
+  </header>
+
+  <!-- BANDEAU ORGANISATEUR ACTIF -->
+  <div id="adminBanner" class="hidden bg-amber-500/30 border-b border-amber-500/40 px-4 py-1.5 text-center text-amber-300 text-xs font-black flex justify-center items-center gap-2">
+    <i class="fa-solid fa-crown text-amber-400"></i> Mode Organisateur Actif
+  </div>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-3 py-3 space-y-4 pb-24">
+    <div id="mainNavTabs" class="flex glass-card p-1 rounded-2xl border border-blue-800/80 text-xs font-black text-slate-300 shadow-2xl gap-1"></div>
+
+    <!-- 1. POULES -->
+    <section id="sec-poules" class="space-y-4">
+      <div id="poulesContainer" class="grid gap-4 md:grid-cols-2"></div>
+    </section>
+
+    <!-- 2. MATCHS LIVE -->
+    <section id="sec-matchs" class="hidden space-y-3">
+      <div class="flex flex-col sm:flex-row justify-between items-center glass-card p-3 rounded-2xl gap-2">
+        <span class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-location-dot text-amber-400"></i> Filtrer par Terrain :</span>
+        <select id="fieldFilter" onchange="renderApp()" class="w-full sm:w-auto bg-slate-900 border border-amber-500/30 text-xs rounded-xl px-3 py-2 text-white font-bold focus:outline-none">
+          <option value="all">Tous les terrains</option>
+        </select>
+      </div>
+      <div id="matchsContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- 3. PHASES FINALES -->
+    <section id="sec-finales" class="hidden space-y-4">
+      <div class="flex glass-card p-1 rounded-2xl border border-amber-500/30 text-xs font-black gap-1">
+        <button onclick="switchCupTab('ldc')" id="cupBtn-ldc" class="flex-1 py-3 rounded-xl bg-amber-500 text-blue-950 transition flex items-center justify-center gap-1.5 font-black shadow">
+          ⭐ LDC
+        </button>
+        <button onclick="switchCupTab('europa')" id="cupBtn-europa" class="flex-1 py-3 rounded-xl bg-slate-900/80 text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 font-black">
+          🛡️ Europa
+        </button>
+      </div>
+
+      <div id="cupContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- 4. ESPACE ADMIN -->
+    <section id="sec-admin" class="hidden space-y-4">
+      
+      <!-- IDENTITÉ -->
+      <div class="glass-card rounded-2xl p-4 space-y-4 shadow-xl">
+        <h3 class="font-black text-amber-400 text-sm flex items-center gap-2 border-b border-amber-500/20 pb-2">
+          <i class="fa-solid fa-pen-to-square text-amber-400"></i> Identité & Logo du Tournoi
+        </h3>
+
+        <div>
+          <label class="block text-[11px] font-black text-white uppercase tracking-wider mb-1">Nom du Tournoi</label>
+          <input type="text" id="cfgTournoiName" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2.5 text-xs text-white font-bold">
+        </div>
+
+        <div class="bg-blue-950/60 border border-amber-500/20 rounded-xl p-3 space-y-2">
+          <label class="block text-[11px] font-black text-white uppercase tracking-wider">Logo (Transparent)</label>
+          <input type="file" id="cfgTournamentLogoInput" accept="image/*" onchange="uploadTournamentLogo(event)" class="block w-full text-[11px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-black file:bg-amber-500 file:text-blue-950">
+        </div>
+
+        <button onclick="saveGlobalConfig()" class="w-full bg-amber-500 text-blue-950 font-black py-3 rounded-xl text-xs transition shadow">
+          Enregistrer l'Identité
+        </button>
+      </div>
+
+      <!-- COUPES LANCEMENT -->
+      <div class="bg-gradient-to-r from-amber-500/20 via-blue-900/40 to-amber-500/20 border border-amber-500/50 rounded-2xl p-4 text-center space-y-2.5 shadow-xl">
+        <h3 class="font-black text-amber-400 text-sm">🚀 Phases Finales</h3>
+        <p class="text-[11px] text-slate-300">Top 2 en LDC, 3e et 4e en Europa.</p>
+        <button onclick="generateFinalsFromStandings()" class="w-full bg-amber-500 text-blue-950 font-black py-3 rounded-xl text-xs transition shadow uppercase">
+          Générer LDC / Europa
+        </button>
+      </div>
+
+      <!-- PLANNING -->
+      <div class="glass-card rounded-2xl p-4 space-y-4 shadow-xl">
+        <h3 class="font-black text-amber-400 text-sm flex items-center gap-2 border-b border-amber-500/20 pb-2">
+          <i class="fa-solid fa-clock text-amber-400"></i> Planning & Horaires
+        </h3>
+        
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 mb-1">Début</label>
+            <input type="time" id="cfgStartTime" value="09:00" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-2 py-2 text-xs text-white font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 mb-1">Match (m)</label>
+            <input type="number" id="cfgMatchDuration" value="12" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-2 py-2 text-xs text-white font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 mb-1">Pause (m)</label>
+            <input type="number" id="cfgBreakDuration" value="3" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-2 py-2 text-xs text-white font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 mb-1">Repas (Heure)</label>
+            <input type="time" id="cfgLunchStart" value="12:30" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-2 py-2 text-xs text-white font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 mb-1">Durée (m)</label>
+            <input type="number" id="cfgLunchDuration" value="45" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-2 py-2 text-xs text-white font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-300 mb-1">Terrains (virgules)</label>
+          <input type="text" id="cfgFieldsList" value="Terrain Honneur, Synthétique 1, Synthétique 2, Synthétique 3" class="w-full bg-slate-900 border border-blue-800 rounded-xl px-3 py-2 text-xs text-white font-bold">
+        </div>
+
+        <button onclick="saveGlobalConfig()" class="w-full bg-amber-500 text-blue-950 font-black py-3 rounded-xl text-xs transition shadow">
+          Enregistrer le Planning
+        </button>
+      </div>
+
+      <!-- ÉQUIPES -->
+      <div class="glass-card rounded-2xl p-4 space-y-4 shadow-xl">
+        <h3 class="font-black text-white text-sm flex items-center gap-2 border-b border-amber-500/20 pb-2">
+          <i class="fa-solid fa-users-line text-amber-400"></i> Équipes (<span id="adminCurrentCatLabel">U11</span>)
+        </h3>
+
+        <div class="flex gap-2">
+          <input type="text" id="newTeamName" placeholder="Nom de l'équipe" class="flex-1 bg-slate-900 border border-blue-800 rounded-xl px-3 py-2 text-xs text-white font-bold">
+          <button onclick="addTeam()" class="bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-black text-xs transition">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <div id="adminTeamsList" class="space-y-2"></div>
+
+        <div class="pt-3 border-t border-blue-900 flex flex-col gap-2">
+          <button onclick="generateMultiGroupDraw()" class="w-full bg-indigo-600 text-white font-black py-3 rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+            <i class="fa-solid fa-shuffle"></i> Tirage au sort Poules
+          </button>
+          <button onclick="generateScheduleWithSmartTimes()" class="w-full bg-emerald-600 text-slate-950 font-black py-3 rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+            <i class="fa-solid fa-calendar-check"></i> Calculer les Matchs
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL ADMIN -->
+  <div id="adminModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card border border-amber-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl space-y-4 text-center">
+      <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 text-xl mx-auto">
+        🔒
+      </div>
+      <div>
+        <h3 class="text-base font-black text-white">Organisateur</h3>
+        <p class="text-[11px] text-slate-300">Code PIN</p>
+      </div>
+      <input type="password" id="pinInput" maxlength="6" placeholder="• • • •" class="w-full text-center tracking-widest text-xl bg-slate-900 border border-blue-800 rounded-xl py-3 text-white font-black focus:outline-none">
+      <div class="flex gap-2">
+        <button onclick="closeAdminModal()" class="flex-1 py-2.5 rounded-xl border border-blue-800 text-slate-300 font-bold text-xs">Annuler</button>
+        <button onclick="verifyPin()" class="flex-1 py-2.5 rounded-xl bg-amber-500 text-blue-950 font-black text-xs">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SECRET_PIN = "02091994";
+    let isAdmin = false;
+    let currentCategory = "U11";
+    let currentTab = "poules";
+    let currentCupTab = "ldc";
+    const categories = ["U9", "U11", "U13", "U15", "Séniors"];
+
+    let globalConfig = JSON.parse(localStorage.getItem('bsa_global_config')) || {
+      name: "Beaumont SA - Tournoi Officiel 2026",
+      matchDuration: 12,
+      breakDuration: 3,
+      startTime: "09:00",
+      lunchStart: "12:30",
+      lunchDuration: 45,
+      fields: ["Terrain Honneur", "Synthétique 1", "Synthétique 2", "Synthétique 3"],
+      tournamentLogo: null
+    };
+
+    let tournamentData = JSON.parse(localStorage.getItem('bsa_tournament_data')) || {
+      "U11": {
+        teams: [
+          { id: "t1", name: "Beaumont SA 1", logo: null }, { id: "t2", name: "FC Canton", logo: null },
+          { id: "t3", name: "AS Avenir", logo: null }, { id: "t4", name: "US Vallée", logo: null }
+        ],
+        poules: {
+          "Poule A": [{ id: "t1", name: "Beaumont SA 1" }, { id: "t2", name: "FC Canton" }],
+          "Poule B": [{ id: "t3", name: "AS Avenir" }, { id: "t4", name: "US Vallée" }]
+        },
+        matchs: [],
+        finales: { ldc: [], europa: [] }
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('headerTournoiName').innerText = globalConfig.name;
+      document.getElementById('cfgTournoiName').value = globalConfig.name;
+      renderLogos();
+      renderCategoryTabs();
+      updateFieldFilterOptions();
+      renderApp();
+
+      setInterval(() => {
+        if (!isAdmin) {
+          const freshData = localStorage.getItem('bsa_tournament_data');
+          if (freshData) {
+            tournamentData = JSON.parse(freshData);
+            renderApp();
+          }
+        }
+      }, 4000);
+    });
+
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = 180;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 180, 180);
+          callback(canvas.toDataURL('image/png', 0.9));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function uploadTournamentLogo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      compressImage(file, function(base64Img) {
+        globalConfig.tournamentLogo = base64Img;
+        localStorage.setItem('bsa_global_config', JSON.stringify(globalConfig));
+        renderLogos();
+      });
+    }
+
+    function uploadTeamLogo(event, teamId) {
+      const file = event.target.files[0];
+      if (!file) return;
+      compressImage(file, function(base64Img) {
+        const team = tournamentData[currentCategory].teams.find(t => t.id === teamId);
+        if (team) team.logo = base64Img;
+        saveAndRender();
+      });
+    }
+
+    // LOGO TOURNOI TRANSPARENT (MIX-BLEND-MODE SCREEN)
+    function renderLogos() {
+      const container = document.getElementById('tournamentLogoContainer');
+      if (globalConfig.tournamentLogo) {
+        container.innerHTML = `<img src="${globalConfig.tournamentLogo}" class="w-full h-full object-contain" style="mix-blend-mode: screen;">`;
+      } else {
+        container.innerHTML = `<span class="text-2xl">🏆</span>`;
+      }
+    }
+
+    // BADGE ÉQUIPE TRANSPARENT (MIX-BLEND-MODE SCREEN)
+    function getTeamBadgeHTML(teamName) {
+      const teams = (tournamentData[currentCategory] && tournamentData[currentCategory].teams) || [];
+      const team = teams.find(t => t.name === teamName);
+      if (team && team.logo) {
+        return `<img src="${team.logo}" class="w-6 h-6 object-contain flex-shrink-0" style="mix-blend-mode: screen;">`;
+      }
+      const initial = teamName ? teamName.substring(0, 2).toUpperCase() : 'FC';
+      return `<span class="w-6 h-6 rounded-md inline-flex items-center justify-center text-[10px] font-black bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex-shrink-0">${initial}</span>`;
+    }
+
+    function openAdminModal() {
+      if (isAdmin) { switchTab('admin'); }
+      else { document.getElementById('adminModal').classList.remove('hidden'); document.getElementById('pinInput').value = ''; }
+    }
+    function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
+    function verifyPin() {
+      if (document.getElementById('pinInput').value === SECRET_PIN) {
+        isAdmin = true;
+        closeAdminModal();
+        document.getElementById('adminBanner').classList.remove('hidden');
+        document.getElementById('adminLogoutBtn').classList.remove('hidden');
+        document.getElementById('adminToggleBtn').innerHTML = `<i class="fa-solid fa-unlock text-amber-400"></i> Admin`;
+        switchTab('admin');
+        renderApp();
+      } else { alert("PIN Incorrect"); }
+    }
+    function logoutAdmin() {
+      isAdmin = false;
+      document.getElementById('adminBanner').classList.add('hidden');
+      document.getElementById('adminLogoutBtn').classList.add('hidden');
+      document.getElementById('adminToggleBtn').innerHTML = `<i class="fa-solid fa-shield-halved text-amber-400"></i> Admin`;
+      switchTab('poules');
+      renderApp();
+    }
+
+    function selectCategory(cat) {
+      currentCategory = cat;
+      if (!tournamentData[cat]) tournamentData[cat] = { teams: [], poules: {}, matchs: [], finales: { ldc: [], europa: [] } };
+      renderCategoryTabs();
+      renderApp();
+    }
+    function renderCategoryTabs() {
+      document.getElementById('categoryTabs').innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')" class="px-3.5 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap ${cat === currentCategory ? 'bg-amber-500 text-blue-950 shadow' : 'bg-blue-900/50 text-slate-300'}">
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    function saveGlobalConfig() {
+      const nameInput = document.getElementById('cfgTournoiName').value.trim();
+      if (nameInput) globalConfig.name = nameInput;
+
+      globalConfig.startTime = document.getElementById('cfgStartTime').value || "09:00";
+      globalConfig.matchDuration = parseInt(document.getElementById('cfgMatchDuration').value) || 12;
+      globalConfig.breakDuration = parseInt(document.getElementById('cfgBreakDuration').value) || 3;
+      globalConfig.lunchStart = document.getElementById('cfgLunchStart').value || "12:30";
+      globalConfig.lunchDuration = parseInt(document.getElementById('cfgLunchDuration').value) || 45;
+      globalConfig.fields = document.getElementById('cfgFieldsList').value.split(',').map(s => s.trim()).filter(Boolean);
+
+      localStorage.setItem('bsa_global_config', JSON.stringify(globalConfig));
+      document.getElementById('headerTournoiName').innerText = globalConfig.name;
+      updateFieldFilterOptions();
+      alert("Enregistré !");
+    }
+
+    function updateFieldFilterOptions() {
+      const select = document.getElementById('fieldFilter');
+      select.innerHTML = `<option value="all">Tous les terrains</option>` + globalConfig.fields.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    function addTeam() {
+      const input = document.getElementById('newTeamName');
+      const name = input.value.trim();
+      if (!name) return;
+      if (!tournamentData[currentCategory]) tournamentData[currentCategory] = { teams: [], poules: {}, matchs: [], finales: { ldc: [], europa: [] } };
+      tournamentData[currentCategory].teams.push({ id: 't_' + Date.now(), name, logo: null });
+      input.value = '';
+      saveAndRender();
+    }
+    function removeTeam(id) {
+      tournamentData[currentCategory].teams = tournamentData[currentCategory].teams.filter(t => t.id !== id);
+      saveAndRender();
+    }
+
+    function generateMultiGroupDraw() {
+      const teams = [...(tournamentData[currentCategory].teams || [])];
+      if (teams.length < 4) { alert("Ajoutez au moins 4 équipes."); return; }
+      for (let i = teams.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [teams[i], teams[j]] = [teams[j], teams[i]];
+      }
+
+      let poules = { "Poule A": [], "Poule B": [], "Poule C": [], "Poule D": [] };
+      teams.forEach((t, idx) => {
+        let pKey = idx % 4 === 0 ? "Poule A" : idx % 4 === 1 ? "Poule B" : idx % 4 === 2 ? "Poule C" : "Poule D";
+        poules[pKey].push(t);
+      });
+
+      Object.keys(poules).forEach(k => { if(poules[k].length === 0) delete poules[k]; });
+      tournamentData[currentCategory].poules = poules;
+      saveAndRender();
+    }
+
+    function generateScheduleWithSmartTimes() {
+      const poules = tournamentData[currentCategory].poules;
+      if (!poules || Object.keys(poules).length === 0) { alert("Tirez d'abord les poules."); return; }
+
+      let matchs = [];
+      let [startH, startM] = globalConfig.startTime.split(':').map(Number);
+      let [lunchH, lunchM] = globalConfig.lunchStart.split(':').map(Number);
+
+      let currentMinuteInDay = startH * 60 + startM;
+      let lunchStartMinute = lunchH * 60 + lunchM;
+      let lunchEndMinute = lunchStartMinute + globalConfig.lunchDuration;
+      let fieldIdx = 0;
+
+      for (let [pouleName, teams] of Object.entries(poules)) {
+        for (let i = 0; i < teams.length; i++) {
+          for (let j = i + 1; j < teams.length; j++) {
+            if (currentMinuteInDay >= lunchStartMinute && currentMinuteInDay < lunchEndMinute) {
+              currentMinuteInDay = lunchEndMinute;
+            }
+            let h = Math.floor(currentMinuteInDay / 60);
+            let m = currentMinuteInDay % 60;
+            let timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+            matchs.push({
+              id: 'm_' + Math.random().toString(36).substr(2, 9),
+              poule: pouleName, teamA: teams[i].name, teamB: teams[j].name,
+              scoreA: null, scoreB: null,
+              field: globalConfig.fields[fieldIdx % globalConfig.fields.length],
+              time: timeStr, status: 'upcoming'
+            });
+
+            currentMinuteInDay += (globalConfig.matchDuration + globalConfig.breakDuration);
+            fieldIdx++;
+          }
+        }
+      }
+
+      tournamentData[currentCategory].matchs = matchs;
+      saveAndRender();
+      switchTab('matchs');
+    }
+
+    function calculateStandings(teams, matchs) {
+      let stats = {};
+      teams.forEach(t => { stats[t.name] = { name: t.name, J: 0, V: 0, N: 0, D: 0, BP: 0, BC: 0, Diff: 0, Pts: 0 }; });
+      matchs.forEach(m => {
+        if (m.status === 'finished' && m.scoreA !== null && m.scoreB !== null) {
+          if (stats[m.teamA] && stats[m.teamB]) {
+            stats[m.teamA].J++; stats[m.teamB].J++;
+            stats[m.teamA].BP += m.scoreA; stats[m.teamA].BC += m.scoreB;
+            stats[m.teamB].BP += m.scoreB; stats[m.teamB].BC += m.scoreA;
+            if (m.scoreA > m.scoreB) {
+              stats[m.teamA].V++; stats[m.teamA].Pts += 3; stats[m.teamB].D++;
+            } else if (m.scoreA < m.scoreB) {
+              stats[m.teamB].V++; stats[m.teamB].Pts += 3; stats[m.teamA].D++;
+            } else {
+              stats[m.teamA].N++; stats[m.teamA].Pts += 1;
+              stats[m.teamB].N++; stats[m.teamB].Pts += 1;
+            }
+          }
+        }
+      });
+      Object.values(stats).forEach(s => s.Diff = s.BP - s.BC);
+      return Object.values(stats).sort((a,b) => b.Pts - a.Pts || b.Diff - a.Diff || b.BP - a.BP);
+    }
+
+    function generateFinalsFromStandings() {
+      const data = tournamentData[currentCategory];
+      if (!data || !data.poules || Object.keys(data.poules).length === 0) return;
+
+      let ldcTeams = [];
+      let europaTeams = [];
+
+      for (let [pouleName, teams] of Object.entries(data.poules)) {
+        const standings = calculateStandings(teams, data.matchs || []);
+        if (standings[0]) ldcTeams.push(standings[0].name);
+        if (standings[1]) ldcTeams.push(standings[1].name);
+        if (standings[2]) europaTeams.push(standings[2].name);
+        if (standings[3]) europaTeams.push(standings[3].name);
+      }
+
+      let ldcMatches = [];
+      let europaMatches = [];
+
+      for (let i = 0; i < ldcTeams.length; i += 2) {
+        if (ldcTeams[i] && ldcTeams[i+1]) {
+          ldcMatches.push({
+            id: 'f_ldc_' + Math.random().toString(36).substr(2, 6),
+            phase: ldcTeams.length > 4 ? `Quart ${Math.floor(i/2)+1}` : `Demi ${Math.floor(i/2)+1}`,
+            teamA: ldcTeams[i], teamB: ldcTeams[i+1], scoreA: null, scoreB: null,
+            time: "14:00", field: globalConfig.fields[i % globalConfig.fields.length]
+          });
+        }
+      }
+
+      for (let i = 0; i < europaTeams.length; i += 2) {
+        if (europaTeams[i] && europaTeams[i+1]) {
+          europaMatches.push({
+            id: 'f_eur_' + Math.random().toString(36).substr(2, 6),
+            phase: europaTeams.length > 4 ? `Quart Europa ${Math.floor(i/2)+1}` : `Demi Europa ${Math.floor(i/2)+1}`,
+            teamA: europaTeams[i], teamB: europaTeams[i+1], scoreA: null, scoreB: null,
+            time: "14:15", field: globalConfig.fields[(i+1) % globalConfig.fields.length]
+          });
+        }
+      }
+
+      tournamentData[currentCategory].finales = { ldc: ldcMatches, europa: europaMatches };
+      saveAndRender();
+      switchTab('finales');
+    }
+
+    function renderApp() {
+      const data = tournamentData[currentCategory] || { teams: [], poules: {}, matchs: [], finales: { ldc: [], europa: [] } };
+
+      let navHTML = `
+        <button onclick="switchTab('poules')" class="flex-1 py-2 rounded-xl ${currentTab==='poules'?'bg-amber-500 text-blue-950 font-black':'text-slate-300 font-bold'} transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-table-list"></i> Poules
+        </button>
+        <button onclick="switchTab('matchs')" class="flex-1 py-2 rounded-xl ${currentTab==='matchs'?'bg-amber-500 text-blue-950 font-black':'text-slate-300 font-bold'} transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-calendar-days"></i> Matchs
+        </button>
+        <button onclick="switchTab('finales')" class="flex-1 py-2 rounded-xl ${currentTab==='finales'?'bg-amber-500 text-blue-950 font-black':'text-slate-300 font-bold'} transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-trophy"></i> Coupes
+        </button>
+      `;
+      if (isAdmin) {
+        navHTML += `
+          <button onclick="switchTab('admin')" class="flex-1 py-2 rounded-xl ${currentTab==='admin'?'bg-amber-500 text-blue-950 font-black':'text-amber-400 font-bold'} transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-gears"></i> Param
+          </button>
+        `;
+      }
+      document.getElementById('mainNavTabs').innerHTML = navHTML;
+
+      ['poules', 'matchs', 'finales', 'admin'].forEach(t => {
+        const sec = document.getElementById(`sec-${t}`);
+        if (sec) sec.classList.toggle('hidden', t !== currentTab);
+      });
+
+      document.getElementById('cfgStartTime').value = globalConfig.startTime;
+      document.getElementById('cfgMatchDuration').value = globalConfig.matchDuration;
+      document.getElementById('cfgBreakDuration').value = globalConfig.breakDuration;
+      document.getElementById('cfgLunchStart').value = globalConfig.lunchStart;
+      document.getElementById('cfgLunchDuration').value = globalConfig.lunchDuration;
+      document.getElementById('cfgFieldsList').value = globalConfig.fields.join(', ');
+      document.getElementById('adminCurrentCatLabel').innerText = currentCategory;
+
+      // ÉQUIPES ADMIN
+      document.getElementById('adminTeamsList').innerHTML = (data.teams || []).map(t => `
+        <div class="bg-blue-950/80 border border-blue-800 p-2.5 rounded-xl flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 truncate">
+            ${getTeamBadgeHTML(t.name)}
+            <span class="font-bold text-xs text-white truncate">${t.name}</span>
+          </div>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <label class="bg-blue-900 text-amber-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-amber-500/30 cursor-pointer">
+              Logo <input type="file" accept="image/*" onchange="uploadTeamLogo(event, '${t.id}')" class="hidden">
+            </label>
+            <button onclick="removeTeam('${t.id}')" class="text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('') || '<span class="text-xs text-slate-400 italic">Aucune équipe.</span>';
+
+      // POULES
+      let poulesHTML = '';
+      for (let [pouleName, teams] of Object.entries(data.poules || {})) {
+        const standings = calculateStandings(teams, data.matchs || []);
+        poulesHTML += `
+          <div class="glass-card rounded-2xl overflow-hidden shadow-xl">
+            <div class="bg-blue-900/60 px-3 py-2.5 border-b border-amber-500/20 flex justify-between items-center">
+              <h2 class="font-black text-amber-400 text-xs uppercase tracking-wider flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${pouleName} (${currentCategory})
+              </h2>
+              <span class="text-[9px] bg-slate-900 px-2 py-0.5 rounded text-amber-300 border border-amber-500/20 font-bold">Top 2 ➔ LDC</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-blue-950/80 text-slate-300 uppercase tracking-wider text-[9px]">
+                  <tr>
+                    <th class="px-2 py-2">#</th>
+                    <th class="px-2 py-2">Équipe</th>
+                    <th class="px-1.5 py-2 text-center">J</th>
+                    <th class="px-1.5 py-2 text-center">Diff</th>
+                    <th class="px-2 py-2 text-center font-black text-amber-400">Pts</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-blue-900/60">
+                  ${standings.map((t, idx) => `
+                    <tr class="${idx < 2 ? 'bg-amber-500/10' : 'bg-blue-950/40'}">
+                      <td class="px-2 py-2.5 font-black ${idx < 2 ? 'text-amber-400' : 'text-slate-400'}">${idx + 1}</td>
+                      <td class="px-2 py-2.5 font-bold text-white flex items-center gap-1.5 truncate">
+                        ${getTeamBadgeHTML(t.name)}
+                        <span class="truncate">${t.name}</span>
+                      </td>
+                      <td class="px-1.5 py-2.5 text-center text-slate-300">${t.J}</td>
+                      <td class="px-1.5 py-2.5 text-center ${t.Diff > 0 ? 'text-emerald-400' : t.Diff < 0 ? 'text-rose-400' : 'text-slate-300'} font-bold">${t.Diff > 0 ? '+'+t.Diff : t.Diff}</td>
+                      <td class="px-2 py-2.5 text-center font-black text-amber-400 text-sm">${t.Pts}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+      document.getElementById('poulesContainer').innerHTML = poulesHTML || '<p class="text-xs text-slate-400 italic text-center py-4">Aucune poule.</p>';
+
+      // MATCHS
+      const selectedField = document.getElementById('fieldFilter').value;
+      const filteredMatchs = (data.matchs || []).filter(m => selectedField === 'all' || m.field === selectedField);
+
+      document.getElementById('matchsContainer').innerHTML = filteredMatchs.map(m => `
+        <div class="glass-card rounded-xl p-3 space-y-2.5 shadow-lg">
+          <div class="flex justify-between items-center text-[10px] text-slate-300 border-b border-blue-900/80 pb-1.5">
+            <span class="font-black text-amber-400 uppercase tracking-wider">${m.poule}</span>
+            <div class="flex items-center gap-2">
+              <span class="bg-slate-900 px-2 py-0.5 rounded border border-blue-800 font-bold">📍 ${m.field}</span>
+              <span class="font-bold text-emerald-400">⏰ ${m.time}</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center py-0.5 gap-1">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+              ${getTeamBadgeHTML(m.teamA)}
+              <span class="font-bold text-xs text-white truncate">${m.teamA}</span>
+            </div>
+            ${isAdmin ? `
+              <div class="flex items-center gap-1 flex-shrink-0 mx-1">
+                <input type="number" value="${m.scoreA !== null ? m.scoreA : ''}" onchange="updateMatchScore('${m.id}', 'scoreA', this.value, 'matchs')" class="w-10 text-center bg-slate-900 border border-amber-500/40 rounded-lg py-1 text-xs font-black text-amber-400">
+                <span class="text-slate-500">-</span>
+                <input type="number" value="${m.scoreB !== null ? m.scoreB : ''}" onchange="updateMatchScore('${m.id}', 'scoreB', this.value, 'matchs')" class="w-10 text-center bg-slate-900 border border-amber-500/40 rounded-lg py-1 text-xs font-black text-amber-400">
+              </div>
+            ` : `
+              <div class="bg-slate-900 px-3 py-1 rounded-lg border border-amber-500/30 font-black text-xs tracking-widest flex items-center justify-center gap-1.5 flex-shrink-0 mx-1">
+                ${m.scoreA !== null && m.scoreB !== null ? `
+                  <span class="${m.scoreA > m.scoreB ? 'text-emerald-400 font-black' : m.scoreA < m.scoreB ? 'text-rose-500 font-black' : 'text-amber-400'}">${m.scoreA}</span>
+                  <span class="text-slate-600">-</span>
+                  <span class="${m.scoreB > m.scoreA ? 'text-emerald-400 font-black' : m.scoreB < m.scoreA ? 'text-rose-500 font-black' : 'text-amber-400'}">${m.scoreB}</span>
+                ` : 'VS'}
+              </div>
+            `}
+            <div class="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+              <span class="font-bold text-xs text-white text-right truncate">${m.teamB}</span>
+              ${getTeamBadgeHTML(m.teamB)}
+            </div>
+          </div>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-400 italic text-center py-4">Aucun match.</p>';
+
+      renderCupTab();
+    }
+
+    function switchCupTab(cup) {
+      currentCupTab = cup;
+      document.getElementById('cupBtn-ldc').className = `flex-1 py-3 rounded-xl ${cup==='ldc'?'bg-amber-500 text-blue-950 font-black shadow':'bg-slate-900/80 text-slate-400'} transition flex items-center justify-center gap-1.5`;
+      document.getElementById('cupBtn-europa').className = `flex-1 py-3 rounded-xl ${cup==='europa'?'bg-indigo-600 text-white font-black shadow':'bg-slate-900/80 text-slate-400'} transition flex items-center justify-center gap-1.5`;
+      renderCupTab();
+    }
+
+    function renderCupTab() {
+      const data = tournamentData[currentCategory] || { finales: { ldc: [], europa: [] } };
+      const matches = (data.finales && data.finales[currentCupTab]) ? data.finales[currentCupTab] : [];
+      const title = currentCupTab === 'ldc' ? '⭐ Ligue des Champions' : '🛡️ Ligue Europa';
+
+      let html = `<h3 class="font-black text-white text-xs uppercase tracking-wider mb-2 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${currentCupTab==='ldc'?'bg-amber-400':'bg-indigo-400'}"></span> ${title}</h3>`;
+      
+      html += matches.map(m => `
+        <div class="glass-card rounded-xl p-3 space-y-2.5 shadow-lg">
+          <div class="flex justify-between items-center text-[10px] text-slate-300 border-b border-blue-900/80 pb-1.5">
+            <span class="font-black ${currentCupTab==='ldc'?'text-amber-400':'text-indigo-400'} uppercase tracking-wider">${m.phase}</span>
+            <div class="flex items-center gap-2">
+              <span class="bg-slate-900 px-2 py-0.5 rounded border border-blue-800 font-bold">📍 ${m.field}</span>
+              <span class="font-bold text-emerald-400">⏰ ${m.time}</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center py-0.5 gap-1">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+              ${getTeamBadgeHTML(m.teamA)}
+              <span class="font-bold text-xs text-white truncate">${m.teamA}</span>
+            </div>
+            ${isAdmin ? `
+              <div class="flex items-center gap-1 flex-shrink-0 mx-1">
+                <input type="number" value="${m.scoreA !== null ? m.scoreA : ''}" onchange="updateMatchScore('${m.id}', 'scoreA', this.value, '${currentCupTab}')" class="w-10 text-center bg-slate-900 border border-amber-500/40 rounded-lg py-1 text-xs font-black text-amber-400">
+                <span class="text-slate-500">-</span>
+                <input type="number" value="${m.scoreB !== null ? m.scoreB : ''}" onchange="updateMatchScore('${m.id}', 'scoreB', this.value, '${currentCupTab}')" class="w-10 text-center bg-slate-900 border border-amber-500/40 rounded-lg py-1 text-xs font-black text-amber-400">
+              </div>
+            ` : `
+              <div class="bg-slate-900 px-3 py-1 rounded-lg border border-amber-500/30 font-black text-xs tracking-widest flex items-center justify-center gap-1.5 flex-shrink-0 mx-1">
+                ${m.scoreA !== null && m.scoreB !== null ? `
+                  <span class="${m.scoreA > m.scoreB ? 'text-emerald-400 font-black' : m.scoreA < m.scoreB ? 'text-rose-500 font-black' : 'text-amber-400'}">${m.scoreA}</span>
+                  <span class="text-slate-600">-</span>
+                  <span class="${m.scoreB > m.scoreA ? 'text-emerald-400 font-black' : m.scoreB < m.scoreA ? 'text-rose-500 font-black' : 'text-amber-400'}">${m.scoreB}</span>
+                ` : 'VS'}
+              </div>
+            `}
+            <div class="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+              <span class="font-bold text-xs text-white text-right truncate">${m.teamB}</span>
+              ${getTeamBadgeHTML(m.teamB)}
+            </div>
+          </div>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-400 italic text-center py-4">Phases finales non générées.</p>';
+
+      document.getElementById('cupContainer').innerHTML = html;
+    }
+
+    function updateMatchScore(matchId, field, val, type) {
+      const value = val === '' ? null : parseInt(val);
+      let match = null;
+      if (type === 'matchs') {
+        match = tournamentData[currentCategory].matchs.find(m => m.id === matchId);
+      } else {
+        match = tournamentData[currentCategory].finales[type].find(m => m.id === matchId);
+      }
+      if (match) {
+        match[field] = value;
+        if (match.scoreA !== null && match.scoreB !== null) match.status = 'finished';
+        saveAndRender();
+      }
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('bsa_tournament_data', JSON.stringify(tournamentData));
+      renderApp();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      renderApp();
+    }
+  </script>
+</body>
+</html>
